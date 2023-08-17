@@ -12,6 +12,8 @@
 // breakeven fonction
 // fonction de timedelta %86400
 // check if a limit order has been executed to cancel another for example
+//test ajout commentaire
+
 
 
 
