@@ -105,8 +105,10 @@ void OnTick()
    int cntBuy, cntSell;
    CountOpenPositions(cntBuy,cntSell);
    
-   //if(cntBuy==0) {trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 150*_Point, cT.ask + 150*_Point, "BUY");}
-   if(cntSell==0) {trade.Sell(0.1, _Symbol, cT.bid, cT.bid + 150*_Point, cT.bid - 150*_Point, "SELL");}
+   //if(cntBuy==0) {trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 1500*_Point, cT.ask + 1500*_Point, "BUY");}
+   if(cntBuy==0) {trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 1500*_Point, 0, "BUY");}
+   if(cntBuy > 0 && currentProfit()/_Point > 25) {Print("euh"); trailingStop();}
+   //if(cntSell==0) {trade.Sell(0.1, _Symbol, cT.bid, cT.bid + 150*_Point, cT.bid - 150*_Point, "SELL");}
    //long sprd = SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
    //Print(sprd);
 //---
@@ -150,6 +152,31 @@ bool CountOpenPositions(int &cntBuy, int &cntSell)
 //+------------------------------------------------------------------+
 //|               Custom function                                    |
 //+------------------------------------------------------------------+
+//---
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool trailingStop() {
+   for(int i = PositionsTotal() - 1; i >= 0; i--) {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket<=0) {Print("Fail to get position ticket"); return false;}
+      if(!PositionSelectByTicket(ticket)) {Print("Failed to select position"); return false;}
+
+      double positionStopLoss = PositionGetDouble(POSITION_SL);
+      double positionTakeProfit = PositionGetDouble(POSITION_TP);
+      double positionOpenPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+      double positionCurrentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+      Print(MathAbs(positionOpenPrice - positionCurrentPrice)/_Point);
+      //if(MathAbs(positionOpenPrice - positionCurrentPrice)/_Point>pipsNumber)
+      //{
+         Print("GOOOOO !! sl: ",positionStopLoss," tp: ",positionTakeProfit);
+         if(trade.PositionModify(ticket,positionOpenPrice,0)) {return true;}
+         
+         
+      //}
+  }
+  return false;
+} 
 //+------------------------------------------------------------------+
 //| current profit                                       |
 //+------------------------------------------------------------------+
@@ -164,9 +191,8 @@ double currentProfit() {
          if(PositionGetSymbol(i) == _Symbol) {
             double posPROPN = PositionGetDouble(POSITION_PRICE_OPEN);
             double posPRCUR = PositionGetDouble(POSITION_PRICE_CURRENT);
-            profit = cT.bid - posPROPN;
-            if(type == POSITION_TYPE_BUY) {profit = cT.bid - posPROPN; return profit;}
-            if(type == POSITION_TYPE_SELL) {profit = posPROPN- cT.ask; return profit;}
+            if(type == POSITION_TYPE_BUY) {profit = cT.bid - posPROPN; return cT.bid - posPROPN;}
+            //if(type == POSITION_TYPE_SELL) {profit = posPROPN- cT.ask; return NormalizeDouble(posPROPN- cT.ask,2);}
             //if(posPRCUR - posPROPN > 0) {profit = cT.bid - posPROPN;}
             //else if (posPRCUR - posPROPN < 0) {profit = cT.ask - posPROPN;}
             
