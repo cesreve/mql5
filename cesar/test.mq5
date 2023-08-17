@@ -3,6 +3,21 @@
 //|                                                          cesreve |
 //|                                                                  |
 //+------------------------------------------------------------------+
+
+// trailing stop basé sur sar avec en input le nombre de pips pour qu'il se trigger
+// calcul du profit latent en pips (pour par exemple trigger un trailing stop
+// compter le nombre d'ordres ouverts
+// fermer toutes les postitions
+// high low entre 2 dates
+// breakeven fonction
+// fonction de timedelta %86400
+// check if a limit order has been executed to cancel another for example
+
+
+
+
+
+
 #property copyright "cesreve"
 #property link      ""
 #property version   "1.00"
@@ -23,6 +38,7 @@ enum x{
 input x lala = A;
 CTrade trade;
 MqlTick cT;
+double nbLots = 0.1;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -79,20 +95,29 @@ void OnTick()
   {
    
 //--- If Not a new bar, do not go further
-   if(!IsNewbar()) {return;}
+   //if(!IsNewbar()) {return;}
 //---
    if(!SymbolInfoTick(_Symbol,cT)) {Print("Faield to get current symbol tick."); return;}   
 //---
-   trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 200*_Point, cT.ask + 200*_Point, "BUY");
-//---
+
    int cntBuy, cntSell;
-   //Print(cntBuy);
-   //Print(cntSell);
    CountOpenPositions(cntBuy,cntSell);
+   
+   //if(cntBuy==0) {trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 150*_Point, cT.ask + 150*_Point, "BUY");}
+   if(cntSell==0) {trade.Sell(0.1, _Symbol, cT.bid, cT.bid + 150*_Point, cT.bid - 150*_Point, "SELL");}
+   //long sprd = SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
+   //Print(sprd);
 //---
-   Comment((string)cT.ask, "\n", _Point, 
-            "\nBuys  ", cntBuy,
-            "\nSells     ", cntSell            
+   Comment((string)cT.ask
+            ,"\nBuys  ", cntBuy
+            ,"\nSells     ", cntSell
+            ,"\nPoint ", _Point
+            ,"\nDigits ", _Digits
+            ,"\nBid ", cT.bid
+            ,"\nAsk ", cT.ask
+            ,"\nBLast ", cT.last
+            //,"\nCurrent profit: ",currentProfit()/_Point
+            ,"\nCurrent profit: ",NormalizeDouble(currentProfit()/_Point,2)
             );
   } // end of the OnTick function
 //+------------------------------------------------------------------+
@@ -122,6 +147,32 @@ bool CountOpenPositions(int &cntBuy, int &cntSell)
 }
 //+------------------------------------------------------------------+
 //|               Custom function                                    |
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| current profit                                       |
+//+------------------------------------------------------------------+
+double currentProfit() {
+   double profit = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--) {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket>0) {
+         PositionSelectByTicket(ticket);
+         long type;
+         PositionGetInteger(POSITION_TYPE, type);
+         if(PositionGetSymbol(i) == _Symbol) {
+            double posPROPN = PositionGetDouble(POSITION_PRICE_OPEN);
+            double posPRCUR = PositionGetDouble(POSITION_PRICE_CURRENT);
+            profit = cT.bid - posPROPN;
+            if(type == POSITION_TYPE_BUY) {profit = cT.bid - posPROPN; return profit;}
+            if(type == POSITION_TYPE_SELL) {profit = posPROPN- cT.ask; return profit;}
+            //if(posPRCUR - posPROPN > 0) {profit = cT.bid - posPROPN;}
+            //else if (posPRCUR - posPROPN < 0) {profit = cT.ask - posPROPN;}
+            
+            }
+         }      
+      }
+   return profit;      
+}  
 //+------------------------------------------------------------------+
 //--- Somme de tous les éléments différents de zéro
 int func(int &array[])
