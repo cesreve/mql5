@@ -97,7 +97,7 @@ void OnTick()
   {
    
 //--- If Not a new bar, do not go further
-   //if(!IsNewbar()) {return;}
+   if(!IsNewbar()) {return;}
 //---
    if(!SymbolInfoTick(_Symbol,cT)) {Print("Faield to get current symbol tick."); return;}   
 //---
@@ -107,7 +107,7 @@ void OnTick()
    
    //if(cntBuy==0) {trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 1500*_Point, cT.ask + 1500*_Point, "BUY");}
    if(cntBuy==0) {trade.Buy(0.1, _Symbol, cT.ask, cT.ask - 1500*_Point, 0, "BUY");}
-   if(cntBuy > 0 && currentProfit()/_Point > 25) {Print("euh"); trailingStop();}
+   if(cntBuy > 0 && currentProfit()/_Point > 250) {Print("euh"); trailingStop();}
    //if(cntSell==0) {trade.Sell(0.1, _Symbol, cT.bid, cT.bid + 150*_Point, cT.bid - 150*_Point, "SELL");}
    //long sprd = SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
    //Print(sprd);
@@ -167,13 +167,11 @@ bool trailingStop() {
       double positionOpenPrice = PositionGetDouble(POSITION_PRICE_OPEN);
       double positionCurrentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
       Print(MathAbs(positionOpenPrice - positionCurrentPrice)/_Point);
-      //if(MathAbs(positionOpenPrice - positionCurrentPrice)/_Point>pipsNumber)
-      //{
+      if(positionStopLoss != positionOpenPrice)
+      {
          Print("GOOOOO !! sl: ",positionStopLoss," tp: ",positionTakeProfit);
-         if(trade.PositionModify(ticket,positionOpenPrice,0)) {return true;}
-         
-         
-      //}
+         if(!trade.PositionModify(ticket,positionOpenPrice,0)) {Print("Failed to modify position"); return false;}        
+      }
   }
   return false;
 } 
