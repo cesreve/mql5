@@ -55,6 +55,8 @@ void OnDeinit(const int reason)
 void OnTick()
   {
 //---
+  
+//---
    if(!IsNewBar()) {return;}
 //---
    TimeToStruct(TimeCurrent(), now);
@@ -115,11 +117,6 @@ bool closePositions()
       if(!PositionGetInteger(POSITION_MAGIC, magic)) {Print("Failed to get position magic number"); return false;}
       if(magic==InpMagicNumber)
       {
-         //long type;
-         //if(!PositionGetInteger(POSITION_TYPE, type)) {Print("Failed to get postion type"); return false;}                  
-         //if(direction==-1 && type==POSITION_TYPE_BUY) {continue;}
-         //if(direction==1 && type==POSITION_TYPE_SELL) {continue;}
-         trade.PositionClose(ticket);
          if(trade.ResultRetcode()!=TRADE_RETCODE_DONE)
          {
             Print("Failed to close position, ticket: ", (string)ticket, 
@@ -158,12 +155,16 @@ bool IsNewBar()
   {
    static datetime previousTime = 0;
    datetime currentTime = iTime(_Symbol, _Period, 0);
-   if(previousTime!=currentTime)
-     {
-      previousTime=currentTime;
-      return true;
-     }
+   if(previousTime!=currentTime) { previousTime=currentTime; return true; }
    return false;  
   }
-  
+//+------------------------------------------------------------------+
+//- New day  --------------------------------------------------------+
+bool IsNewDay()
+  {
+   static datetime previousDay = 0;
+   datetime currentDay = iTime(_Symbol,PERIOD_D1, 0);
+   if(previousDay!=currentDay) { previousDay=currentDay; return true; }
+   return false;  
+  }  
 //+----------------------   T H E    E N D   ------------------------+
