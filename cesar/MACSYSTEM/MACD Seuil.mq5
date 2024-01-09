@@ -40,10 +40,14 @@ input group "==== TIME FRAME ====";
 input time_unit InpTframe= M1; // Trailing stop method
 
 //--- indicator parameters
-input group "==== Indicator parmaeter ====";
+input group "==== Strategy parameters ====";
 input int InpFastEmaPeriod = 12;
 input int InpSlowEmaPeriod = 26;
 input int InpSignalPeriod = 9;
+
+input int InpATRPeriod = 14;
+
+input int InpThresholdMACD = 4;
 
 //---
 input group "==== OTHE ====";
@@ -63,9 +67,12 @@ datetime stopTime = 0;
 datetime closeTime = 0;
 
 //--- Indicators
-int handle;
+int handleMACD;
 double macdBuffer[];
 double signalBuffer[];
+
+int handleATR;
+double atrBuffer[];
 //---
 int cntBuy = 0;
 int cntSell = 0;
@@ -79,14 +86,21 @@ int OnInit()
 //---
    calculateDatetimes();   
 //--- create indicator hanlde
-   handle = iMACD(Symbol(), (ENUM_TIMEFRAMES)InpTframe ,InpFastEmaPeriod,InpSlowEmaPeriod,InpSignalPeriod,PRICE_CLOSE);
+   handleMACD = iMACD(Symbol(), (ENUM_TIMEFRAMES)InpTframe ,InpFastEmaPeriod,InpSlowEmaPeriod,InpSignalPeriod,PRICE_CLOSE);
    ArraySetAsSeries(macdBuffer, true);
    ArraySetAsSeries(signalBuffer, true);
-   if(handle==INVALID_HANDLE)
+   if(handleMACD==INVALID_HANDLE)
      {
       Alert("Failed to create parabolic sar handle");
       return INIT_FAILED;
-     }  
+     } 
+//---
+   handleATR = iATR(Symbol(), Period(), InpATRPeriod);   
+   if(handleATR==INVALID_HANDLE)
+     {
+      Alert("Failed to create atr handle");
+      return INIT_FAILED;
+     } 
 //---
 
    return(INIT_SUCCEEDED);
@@ -97,7 +111,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
-   IndicatorRelease(handle);
+   IndicatorRelease(handleMACD);
    
   }
 //+------------------------------------------------------------------+
@@ -110,19 +124,27 @@ void OnTick()
    nowTime = TimeCurrent();
    TimeToStruct(nowTime, nowTimeStruct);
 //---
+   trainlingStop();
+//---
    if(!IsNewbar()) {return;}
    if( !(nowTime>= startTime) ) {return;}
    if( nowTime >= stopTime) {return;}
 //--- update indicators
-   MACD();
+   fillBuffers(3);
 //---
+   CountOpenPositions();
+//---
+   double ask = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+   double bid = SymbolInfoDouble(Symbol(), SYMBOL_BID);
    
 //--- conditions
-   // BUY
-   if(macdBuffer[1]>0 && macdBuffer[1]>macdBuffer[2] && macdBuffer[2]<macdBuffer[3]) {Print("signal long");}
-   
-   //SELL
-   if(macdBuffer[1]<0 && macdBuffer[1]<macdBuffer[2] && macdBuffer[2]>macdBuffer[3]) {Print("signal short");}
+   if( macdBuffer[1] > signalBuffer[1] && MathAbs(macdBuffer[1]-signalBuffer[1]) > InpThresholdMACD && cntBuy == 0) {
+      trade.Buy(0.1, Symbol(), ask, ask - 50, 0);
+   }
+   //if( macdBuffer[1] < signalBuffer[1] && MathAbs(macdBuffer[1]-signalBuffer[1]) > 4 && cntSell == 0) {
+   //   trade.Sell(0.1, Symbol(), bid, bid + 12, bid - 15);
+   //}
+
 //---
    double close1 = iClose(Symbol(), Period(), 1);
    
@@ -195,7 +217,31 @@ bool CountOpenPositions()
    }   
    return true;
 }
-
+//+------------------------------------------------------------------+
+// Traling Stop   ------------------------------------------------------+
+bool trainlingStop()
+{
+   //double currPrice = 
+   int total = PositionsTotal();
+   for(int i=total-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket<=0) {Print("Fail to get position ticket"); return false;}
+      if(!PositionSelectByTicket(ticket)) {Print("Failed to select position"); return false;}
+      long magic;
+      if(!PositionGetInteger(POSITION_MAGIC, magic)) {Print("Failed to get position magic number"); return false;}
+      if(magic==InpMagicNumber) {
+         double priceOpen = PositionGetDouble(POSITION_PRICE_OPEN);
+         double priceCurrent = PositionGetDouble(POSITION_PRICE_CURRENT);
+         double positionSL = PositionGetDouble(POSITION_SL);
+         double positionTP = PositionGetDouble(POSITION_TP);
+         if( priceCurrent-2*atrBuffer[1] > positionSL) {
+            trade.PositionModify(ticket, priceCurrent-2*atrBuffer[1], 0);
+         }         
+      }
+   }
+   return true;
+}
 //+------------------------------------------------------------------+
 // Set to BE   ------------------------------------------------------+
 bool setBreakEven()
@@ -260,17 +306,25 @@ bool IsNewbar()
      }
    return false;  
   }
+
 //+------------------------------------------------------------------+
 //| indicators                                                       |
 //+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
-//- MACD   ----------------------------------------------------------+
-void MACD()
-{
-   if(CopyBuffer(handle,0,0,4,macdBuffer)!=4) { Print("Failed to get MACD values."); }
-   if(CopyBuffer(handle,1,0,4,signalBuffer)!=4) { Print("Failed to get signal values."); }
+// Load values from the indicators into buffers
+bool fillBuffers( int valuesRequired ) {
+   if(CopyBuffer(handleMACD, 0, 0, valuesRequired, macdBuffer)!=valuesRequired) {
+      Print("Failed to get MACD values."); 
+      return false;
+      }
+   if(CopyBuffer(handleMACD, 1, 0, valuesRequired, signalBuffer)!=valuesRequired) {
+      Print("Failed to get signal values."); 
+      return false;
+      }
+   if(CopyBuffer(handleATR, 0, 0, valuesRequired, atrBuffer)!=valuesRequired) {
+      Print("Failed to get ATR values."); 
+      return false;
+      }
+   
+   return true;
 }
-//+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
-
 

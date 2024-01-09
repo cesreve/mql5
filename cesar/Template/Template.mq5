@@ -13,14 +13,7 @@
 #include <Trade\Trade.mqh>
 CTrade trade;
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-enum time_unit
-  {
-    M1 = PERIOD_M1,
-    M5 = PERIOD_M5
-  };
+
 //+------------------------------------------------------------------+
 //| Inputs                                                           |
 //+------------------------------------------------------------------+
@@ -30,32 +23,19 @@ input int InpMagicNumber = 13112023;
 input group "==== Trading hours ====";
 input int InpStartHour        = 10; // Start hour
 input int InpStartMinute      = 0;  // Start minute
-input int InpStopHour         = 20; // Stop trading hour
+input int InpStopHour         = 18; // Stop trading hour
 input int InpStopMinute       = 0;  // Stop trading hour minute
 input int InpCloseHour        = 22; // Close all positions hour
 input int InpCloseMinute      = 55; // Close all positions minute
 
-//--- strategy parameters
-input group "==== TIME FRAME ====";
-input time_unit InpTframe= M1; // Trailing stop method
-
-//--- indicator parameters
-input group "==== Indicator parmaeter ====";
-input int InpFastEmaPeriod = 12;
-input int InpSlowEmaPeriod = 26;
-input int InpSignalPeriod = 9;
 
 //---
-input group "==== OTHE ====";
 input int InpBreakEvenTreshold = 0;
 //+------------------------------------------------------------------+
 //| Global variables                                                 |
 //+------------------------------------------------------------------+ 
 MqlTick tick;
 MqlDateTime nowTimeStruct;
-//---
-string cmt ="";
-//---
 
 datetime nowTime = 0;
 datetime startTime = 0;
@@ -63,9 +43,8 @@ datetime stopTime = 0;
 datetime closeTime = 0;
 
 //--- Indicators
-int handle;
-double macdBuffer[];
-double signalBuffer[];
+int handleSAR;
+double sar[];
 //---
 int cntBuy = 0;
 int cntSell = 0;
@@ -79,10 +58,9 @@ int OnInit()
 //---
    calculateDatetimes();   
 //--- create indicator hanlde
-   handle = iMACD(Symbol(), (ENUM_TIMEFRAMES)InpTframe ,InpFastEmaPeriod,InpSlowEmaPeriod,InpSignalPeriod,PRICE_CLOSE);
-   ArraySetAsSeries(macdBuffer, true);
-   ArraySetAsSeries(signalBuffer, true);
-   if(handle==INVALID_HANDLE)
+   handleSAR = iSAR(Symbol(), PERIOD_CURRENT,0.1,0.1);
+   
+   if(handleSAR==INVALID_HANDLE)
      {
       Alert("Failed to create parabolic sar handle");
       return INIT_FAILED;
@@ -97,7 +75,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
-   IndicatorRelease(handle);
+   IndicatorRelease(handleSAR);
    
   }
 //+------------------------------------------------------------------+
@@ -109,33 +87,10 @@ void OnTick()
    calculateDatetimes();
    nowTime = TimeCurrent();
    TimeToStruct(nowTime, nowTimeStruct);
-//---
-   if(!IsNewbar()) {return;}
-   if( !(nowTime>= startTime) ) {return;}
-   if( nowTime >= stopTime) {return;}
+   
 //--- update indicators
-   MACD();
-//---
+   SAR();
    
-//--- conditions
-   // BUY
-   if(macdBuffer[1]>0 && macdBuffer[1]>macdBuffer[2] && macdBuffer[2]<macdBuffer[3]) {Print("signal long");}
-   
-   //SELL
-   if(macdBuffer[1]<0 && macdBuffer[1]<macdBuffer[2] && macdBuffer[2]>macdBuffer[3]) {Print("signal short");}
-//---
-   double close1 = iClose(Symbol(), Period(), 1);
-   
-//---
-   cmt = "";
-   cmt += (string)macdBuffer[1];
-   cmt += "\n";
-   cmt += (string)macdBuffer[0];
-   cmt += "\n";
-   cmt += (string)(macdBuffer[1]/close1*1000);
-   cmt += "\n";
-   cmt += (string)MathAbs(macdBuffer[1]-signalBuffer[1]);
-   Comment(cmt);
   }
 //+-----------------    END OF ON TICK FUNCTION    ------------------+
 
@@ -264,11 +219,11 @@ bool IsNewbar()
 //| indicators                                                       |
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-//- MACD   ----------------------------------------------------------+
-void MACD()
+//- Parabolic SAR   -------------------------------------------------+
+void SAR()
 {
-   if(CopyBuffer(handle,0,0,4,macdBuffer)!=4) { Print("Failed to get MACD values."); }
-   if(CopyBuffer(handle,1,0,4,signalBuffer)!=4) { Print("Failed to get signal values."); }
+   ArraySetAsSeries(sar, true);
+   if(CopyBuffer(handleSAR,0,0,3,sar)!=3) { Print("Failed to get iSAR values."); }
 }
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
