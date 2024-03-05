@@ -7,6 +7,16 @@
 #property link      ""
 #property version   "1.00"
 
+//--- rules
+//candle 1
+//if low of candle 2 is lower than low of candle 1 
+//then set a buy stop order at the high of candle 3 and the stop loss at the low of candle 4
+//exit at the end of the day of candle 4
+//cancel order if not triggered during candle 4
+
+
+// examples, USDJPY, Daily, 28 Juillet pour un setup Long
+
 
 
 //+------------------------------------------------------------------+
@@ -18,41 +28,16 @@ CTrade trade;
 const string IndicatorName   = "Examples\\Donchian"; // https://www.mql5.com/en/code/46989
 
 //+------------------------------------------------------------------+
-enum time_unit
-{
-   M1 = PERIOD_M1,
-   M5 = PERIOD_M5
-};
-  
-enum symbol
-{
-   USDJPY,
-   EURUSD
-};
-
-//+------------------------------------------------------------------+
 //| Inputs                                                           |
 //+------------------------------------------------------------------+
 input int InpMagicNumber = 13112023;
-
+input double InpLotSize = 0.01;
 //--- Hours 
 input group "==== Trading hours ====";
-input int InpStartHour        = 10; // Start hour
-input int InpStartMinute      = 0;  // Start minute
-input int InpStopHour         = 18; // Stop trading hour
-input int InpStopMinute       = 0;  // Stop trading hour minute
-input int InpCloseHour        = 22; // Close all positions hour
+input int InpCloseHour        = 23; // Close all positions hour
 input int InpCloseMinute      = 55; // Close all positions minute
 
-//--- strategy parameters
-input group "==== TIME FRAME ====";
-input time_unit InpTframe = M1; 
 
-//--- strategy parameters
-input group "==== SYMBOL ====";
-input symbol InpSymbol;
-//---
-input int InpBreakEvenTreshold = 0;
 //+------------------------------------------------------------------+
 //| Global variables                                                 |
 //+------------------------------------------------------------------+ 
@@ -60,18 +45,8 @@ MqlTick tick;
 MqlDateTime nowTimeStruct;
 
 datetime nowTime = 0;
-datetime startTime = 0;
 datetime stopTime = 0;
 datetime closeTime = 0;
-
-//--- Indicators
-int handleSAR;
-double bufferSAR[];
-
-int handleCustom;
-double bufferCustom[];
-
-const int bufferValuesRequired = 3;
 //---
 int cntBuy = 0;
 int cntSell = 0;
@@ -84,24 +59,6 @@ int OnInit()
    trade.SetExpertMagicNumber(InpMagicNumber);   
 //---
    calculateDatetimes();   
-//--- create indicator hanlde
-   handleSAR = iSAR(Symbol(), (ENUM_TIMEFRAMES)InpTframe, 0.1, 0.1);
-   ArraySetAsSeries( bufferSAR, true );
-   if(handleSAR==INVALID_HANDLE)
-     {
-      Alert("Failed to create parabolic sar handle");
-      return INIT_FAILED;
-     }  
-//--- test
-   handleCustom = iCustom( Symbol(), Period(), IndicatorName, 5);
-   ArraySetAsSeries( bufferCustom, true );
-   if(handleCustom==INVALID_HANDLE)
-     {
-      Alert("Failed to create custom handle");
-      return INIT_FAILED;
-     }  
-//---
-
 
    return(INIT_SUCCEEDED);
   }
@@ -111,8 +68,6 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
-   IndicatorRelease(handleSAR);
-   
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -123,19 +78,41 @@ void OnTick()
    calculateDatetimes();
    nowTime = TimeCurrent();
    TimeToStruct(nowTime, nowTimeStruct);
+
+//---
+   if(nowTime >= closeTime) { closePositions(); }
+
+//---
+
+   if(!IsNewbar()) {return;}
+//--- indicators 
+//1
+   double high1 = iHigh(Symbol(), Period(), 1);
+   double low1 = iLow(Symbol(), Period(), 1);
+//2
+   double low2 = iLow(Symbol(), Period(), 2);
+   double high2 = iHigh(Symbol(), Period(), 2);
+//3
+   double low3 = iLow(Symbol(), Period(), 3);
+   double high3 = iHigh(Symbol(), Period(), 3);
+
+//--- trading conditions
+//--- Long setup
+   if( low2 < low3 && low2 < low1) {
+      trade.BuyStop(InpLotSize, high1, Symbol(), low1, 0, ORDER_TIME_DAY);
+   }
    
-//--- update indicators
-   fillBuffers(3);
+   if( high2 > high3 && high2 > high1 ) {
+      trade.SellStop(InpLotSize, low1, Symbol(), high1, 0, ORDER_TIME_DAY);
+   }
+   
+//---
    
   }
 //+-----------------    END OF ON TICK FUNCTION    ------------------+
-
-
-
 //+------------------------------------------------------------------+
 // ---------            Custom functions            -----------------+
 //+------------------------------------------------------------------+
-
 //+------------------------------------------------------------------+
 //- Calculate datetimes  --------------------------------------------+
 void calculateDatetimes()
@@ -145,16 +122,6 @@ void calculateDatetimes()
    datetime now = TimeCurrent();
    TimeToStruct(now, nowStruct);   
    nowStruct.sec = 0;
-   
-   // start time
-   nowStruct.hour = InpStartHour;
-   nowStruct.min = InpStartMinute;
-   startTime = StructToTime(nowStruct);
-   
-   // stop time
-   nowStruct.hour = InpStopHour;
-   nowStruct.min = InpStopMinute;
-   stopTime = StructToTime(nowStruct);
    
    // close time
    nowStruct.hour = InpCloseHour;
@@ -188,33 +155,6 @@ bool CountOpenPositions()
 }
 
 //+------------------------------------------------------------------+
-// Set to BE   ------------------------------------------------------+
-bool setBreakEven()
-{
-   //double currPrice = 
-   int total = PositionsTotal();
-   for(int i=total-1; i>=0; i--)
-   {
-      ulong ticket = PositionGetTicket(i);
-      if(ticket<=0) {Print("Fail to get position ticket"); return false;}
-      if(!PositionSelectByTicket(ticket)) {Print("Failed to select position"); return false;}
-      long magic;
-      if(!PositionGetInteger(POSITION_MAGIC, magic)) {Print("Failed to get position magic number"); return false;}
-      if(magic==InpMagicNumber) {
-         double priceOpen = PositionGetDouble(POSITION_PRICE_OPEN);
-         double priceCurrent = PositionGetDouble(POSITION_PRICE_CURRENT);
-         double positionSL = PositionGetDouble(POSITION_SL);
-         double positionTP = PositionGetDouble(POSITION_TP);
-         //if( MathAbs(priceCurrent-priceOpen) > MathAbs(priceCurrent - positionSL) ) {
-         if( MathAbs(priceCurrent-priceOpen) > InpBreakEvenTreshold ) {
-            trade.PositionModify(ticket, PositionGetDouble(POSITION_PRICE_OPEN),PositionGetDouble(POSITION_TP) );
-         }
-         
-      }
-   }
-   return true;
-}
-//+------------------------------------------------------------------+
 //- Close all positions   -------------------------------------------+
 bool closePositions()
 {
@@ -238,6 +178,7 @@ bool closePositions()
    }  
    return true;    
 }
+
 ////+------------------------------------------------------------------+
 ////- New Bar  --------------------------------------------------------+
 bool IsNewbar()
@@ -251,26 +192,3 @@ bool IsNewbar()
      }
    return false;  
   }
-//+------------------------------------------------------------------+
-//| indicators                                                       |
-//+------------------------------------------------------------------+
-// Load values from the indicators into buffers
-bool fillBuffers( int valuesRequired ) {
-
-   if ( CopyBuffer( handleSAR, 0, 0, valuesRequired, bufferSAR ) < valuesRequired ) {
-      Print( "Insufficient results from SAR" );
-      return false;
-   }
-   //if ( CopyBuffer( HandleSlowMA, 0, 0, valuesRequired, BufferSlowMA ) < valuesRequired ) {
-   //   Print( "Insufficient results from slow MA" );
-   //   return false;
-   //}
-   //if ( CopyBuffer( HandleRSI, 0, 0, valuesRequired, BufferRSI ) < valuesRequired ) {
-   //   Print( "Insufficient results from RSI" );
-   //   return false;
-   //}
-
-   return true;
-}
-
-
