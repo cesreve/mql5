@@ -35,14 +35,14 @@ protected:
 
 public:
    CExpert( CIndicatorMA *fastMA, CIndicatorMA *slowMA,      //
-            double buyLevel, double sellLevel, double tpslRatio, //
+            //double buyLevel, double sellLevel, double tpslRatio, //
             double volume, string tradeComment, int magic );
    ~CExpert();
 };
 
 //
 CExpert::CExpert( CIndicatorMA *fastMA, CIndicatorMA *slowMA,     //
-                  double buyLevel, double sellLevel, double tpslRatio, //
+                  //double buyLevel, double sellLevel, double tpslRatio, //
                   double volume, string tradeComment, int magic )
    : CExpertBase( volume, tradeComment, magic ) {
 
@@ -52,7 +52,7 @@ CExpert::CExpert( CIndicatorMA *fastMA, CIndicatorMA *slowMA,     //
    mBuyPrice     = 0;
    mSellPrice    = 0;
 
-   mTPSLRatio    = tpslRatio;
+   //mTPSLRatio    = tpslRatio;
 
    mInitResult   = INIT_SUCCEEDED;
 }
@@ -98,9 +98,8 @@ void CExpert::Loop() {
 
 void CExpert::OpenTrade( ENUM_ORDER_TYPE type, double sl ) {
 
-   double price   = ( type == ORDER_TYPE_BUY ) ? SymbolInfoDouble( mSymbol, SYMBOL_ASK )
-                                               : SymbolInfoDouble( mSymbol, SYMBOL_BID );
-   price          = NormalizeDouble( price, Digits() );
+   double price = ( type == ORDER_TYPE_BUY ) ? SymbolInfoDouble( mSymbol, SYMBOL_ASK ) : SymbolInfoDouble( mSymbol, SYMBOL_BID );
+   price = NormalizeDouble( price, Digits() );
    double slPrice = ( sl == 0 ) ? 0 : NormalizeDouble( price - sl, Digits() );
    double tpPrice = NormalizeDouble( price + ( sl * mTPSLRatio ), Digits() ); //	Same for both buy and sell
    Trade.PositionOpen( mSymbol, type, mOrderSize, price, slPrice, tpPrice, mTradeComment );
