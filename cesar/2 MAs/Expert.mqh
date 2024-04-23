@@ -49,9 +49,6 @@ CExpert::CExpert( CIndicatorMA *fastMA, CIndicatorMA *slowMA,     //
    mFastMA      = fastMA;
    mSlowMA      = slowMA;
 
-   mRSIBuyLevel  = buyLevel;
-   mRSISellLevel = sellLevel;
-
    mBuyPrice     = 0;
    mSellPrice    = 0;
 
@@ -63,8 +60,8 @@ CExpert::CExpert( CIndicatorMA *fastMA, CIndicatorMA *slowMA,     //
 //
 CExpert::~CExpert() {
 
-   delete mRSI;
-   delete mFractal;
+   delete mFastMA;
+   delete mSlowMA;
 }
 
 //
@@ -88,11 +85,11 @@ void CExpert::Loop() {
    //}
 
    if ( mfastMA1 > mSlowMA1 && mfastMA2 < mSlowMA2 ) {
-      OpenTrade( ORDER_TYPE_BUY, mBuyPrice - mBuySL );
+      OpenTrade( ORDER_TYPE_BUY, 0 );
       mBuyPrice = 0;
    }
    else if ( mfastMA1 > mSlowMA1 && mfastMA2 < mSlowMA2 ) {
-      OpenTrade( ORDER_TYPE_SELL, mSellPrice - mSellSL );
+      OpenTrade( ORDER_TYPE_SELL, 0 );
       mSellPrice = 0;
    }
 
@@ -104,9 +101,8 @@ void CExpert::OpenTrade( ENUM_ORDER_TYPE type, double sl ) {
    double price   = ( type == ORDER_TYPE_BUY ) ? SymbolInfoDouble( mSymbol, SYMBOL_ASK )
                                                : SymbolInfoDouble( mSymbol, SYMBOL_BID );
    price          = NormalizeDouble( price, Digits() );
-   double slPrice = NormalizeDouble( price - sl, Digits() );
-   double tpPrice =
-      NormalizeDouble( price + ( sl * mTPSLRatio ), Digits() ); //	Same for both buy and sell
+   double slPrice = ( sl == 0 ) ? 0 : NormalizeDouble( price - sl, Digits() );
+   double tpPrice = NormalizeDouble( price + ( sl * mTPSLRatio ), Digits() ); //	Same for both buy and sell
    Trade.PositionOpen( mSymbol, type, mOrderSize, price, slPrice, tpPrice, mTradeComment );
 }
 
