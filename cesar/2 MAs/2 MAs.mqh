@@ -16,8 +16,13 @@ input int                InpFastMAPeriod       = 10;          //	Fast MA period
 input int                InpSlowMAPeriod       = 20;          //	Slow MA period
 input ENUM_APPLIED_PRICE InpMAAppliedPrice = PRICE_CLOSE;     // MA applied price
 input ENUM_MA_METHOD     InpMAAppliedMethod = MODE_SMA;      // MA Smoothing Method
+
 input string InpStartTime;
 input string InpStopTime;
+
+input int InpStopLoss = 35;
+input int InpTakeProfit = 55;
+
 //	Default inputs
 //	I have these in a separate file because I use them all the time
 #include <Orchard/Shared/Default Inputs.mqh>
@@ -33,6 +38,7 @@ int      OnInit() {
       new CExpert( new CIndicatorMA( InpFastMAPeriod, InpMAAppliedMethod, InpMAAppliedPrice), // Fast MA
                    new CIndicatorMA( InpSlowMAPeriod, InpMAAppliedMethod, InpMAAppliedPrice ), // Slow MA
                    new CTimeFilter(InpStartTime, InpStopTime), //timefilter
+                   InpStopLoss, InpTakeProfit, // SL and TP in points
                    InpVolume, InpTradeComment, InpMagic                   //	Common
            );
 
