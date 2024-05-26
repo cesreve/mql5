@@ -32,10 +32,11 @@ const string IndicatorName   = "Examples\\Donchian"; // https://www.mql5.com/en/
 //+------------------------------------------------------------------+
 input int InpMagicNumber = 13112023;
 input double InpLotSize = 0.01;
+input string InpTradeComment = " Kangaroo Tail";
 //--- Hours 
 input group "==== Trading hours ====";
-input int InpCloseHour        = 23; // Close all positions hour
-input int InpCloseMinute      = 55; // Close all positions minute
+input int InpCloseHour        = 22; // Close all positions hour
+input int InpCloseMinute      = 45; // Close all positions minute
 
 
 //+------------------------------------------------------------------+
@@ -99,11 +100,11 @@ void OnTick()
 //--- trading conditions
 //--- Long setup
    if( low2 < low3 && low2 < low1) {
-      trade.BuyStop(InpLotSize, high1, Symbol(), low1, 0, ORDER_TIME_DAY);
+      trade.BuyStop(InpLotSize, high1, Symbol(), low1, 0, ORDER_TIME_DAY, 0, InpTradeComment);
    }
    
    if( high2 > high3 && high2 > high1 ) {
-      trade.SellStop(InpLotSize, low1, Symbol(), high1, 0, ORDER_TIME_DAY);
+      trade.SellStop(InpLotSize, low1, Symbol(), high1, 0, ORDER_TIME_DAY, 0, InpTradeComment);
    }
    
 //---
