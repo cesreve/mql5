@@ -1,10 +1,14 @@
 //+------------------------------------------------------------------+
-//|                                             RB-RANGEBreakout.mq5 |
-//|                                                                  |
-//|                                                                  |
+//|                                               Range Breakout.mq5 |
+//|                                                      version 1.0 |
+//|                                                 date: 26/05/2024 |
 //+------------------------------------------------------------------+
-#property copyright ""
-#property link      ""
+// Trading RULES
+// Detect high and low between start time and end time
+// if price breaks enter in position
+// close all position at the end of the day (end time)
+// can trigger in both side, but only 1 time a day per side
+//+------------------------------------------------------------------+
 #property version   "1.00"
 //+------------------------------------------------------------------+
 //| Include                                                          |
@@ -16,6 +20,7 @@ CTrade trade;
 //| Inputs                                                           |
 //+------------------------------------------------------------------+
 // Time inputs
+input group "==== Strategy parameters ====";
 //--- range input
 input group "==== Range ====";
 input int InpStartRangeHour   = 10; // Range Start hour
@@ -28,15 +33,12 @@ input int InpStopHour         = 13; // Stop pending orders hour
 input int InpStopMinute       = 0;  // Stop pending orders minute
 input int InpCloseHour        = 18; // Close all positions hour
 input int InpCloseMinute      = 45; // Close all positions minute
-//--- strategy parameters
-input group "==== Strategy parameters ====";
-input int InpTakeProfit = 0;
 
 //--- others
 input group "==== Expert settings ====";
-input int InpMagicNumber = 1092023;
-input double InpLots     = 0.1;
-input string InpTradeComment = "RB-RangeBreakout";
+input int InpMagicNumber      = 0;
+input double InpLots          = 0.01;
+input string InpTradeComment  = "Range Breakout";
 
 //+------------------------------------------------------------------+
 //| Global variables                                                 |
@@ -45,7 +47,6 @@ MqlTick tick;
 
 double rangeHigh = 0;
 double rangeLow = 0;
-
 
 datetime now;
 datetime startRange = 0;
@@ -67,7 +68,9 @@ int OnInit()
    now = TimeCurrent();
    calculateDatetimes();
 //---
-   trade.SetExpertMagicNumber(InpMagicNumber);  
+   trade.SetExpertMagicNumber(InpMagicNumber);
+//---
+   Print("Starting: ", InpTradeComment, " on ", (string)Symbol() );
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -96,6 +99,24 @@ void OnTick()
       rangeAllowed=true;
       }
 //---
+   comm = "";
+   comm += InpTradeComment;
+   comm += "\n";
+   comm += (string)Symbol();
+   comm += "\n";
+   comm += (string)startRange;
+   comm += "\n";
+   comm += (string)endRange;
+   comm += "\n";
+   comm += (string)closeTime;
+   comm += "\n";
+   comm += (string)InpLots;
+   comm += "\n";
+   comm += (string)tradeLongAllowed;
+   comm += "\n";
+   comm += (string)tradeShortAllowed;
+   Comment(comm);
+//---
    if ( !(now >= endRange) ) { return; } // time condition
    highBetweenTwoHours(startRange, endRange); // calculates high and low of range
    if (rangeAllowed) {drawObjetcs();} 
@@ -114,9 +135,7 @@ void OnTick()
    if (now > closeTime) { closePositions(); }
 
 
-
-
-   } // end of the OnTick Function 
+} // end of the OnTick Function 
  
 //+------------------------------------------------------------------+
 //|                    Custom functions                              |
@@ -124,9 +143,7 @@ void OnTick()
 //+------------------------------------------------------------------+
 void setOrder(ENUM_ORDER_TYPE type, double price) {
 
-   if(!setOrder(type, price, InpTakeProfit)) return;
-   //if(!setOrder(type, price, TakeProfit2)) return;   
-   //if(!setOrder(type, price, TakeProfit3)) return;
+   if(!setOrder(type, price, 0)) return;
 }
 
 bool setOrder(ENUM_ORDER_TYPE type, double price, double takeProfit) {
