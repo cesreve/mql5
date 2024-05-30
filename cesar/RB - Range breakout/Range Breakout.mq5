@@ -39,7 +39,7 @@ input group "==== Expert settings ====";
 input int InpMagicNumber      = 0;
 input double InpLots          = 0.01;
 input string InpTradeComment  = "Range Breakout";
-
+input color InpColor          = clrRed;
 //+------------------------------------------------------------------+
 //| Global variables                                                 |
 //+------------------------------------------------------------------+
@@ -242,24 +242,30 @@ void drawObjetcs() {
       //--- high border range
       ObjectCreate(0, "rangeHigh", OBJ_TREND, 0, startRange, rangeHigh, now, rangeHigh);
       ObjectSetInteger(0, "rangeHigh", OBJPROP_HIDDEN, false );
+      ObjectSetInteger(0, "rangeHigh", OBJPROP_COLOR, InpColor );
       ObjectCreate(0, "rangeHigh next", OBJ_TREND, 0, now, rangeHigh, stopTime, rangeHigh);
       ObjectSetInteger(0, "rangeHigh next", OBJPROP_HIDDEN, false );
       ObjectSetInteger( 0, "rangeHigh next", OBJPROP_STYLE, STYLE_DOT );
+      ObjectSetInteger(0, "rangeHigh next", OBJPROP_COLOR, InpColor );
       //text
       ObjectCreate(0, "range high text", OBJ_TEXT, 0, startRange, rangeHigh );
       ObjectSetString(0, "range high text", OBJPROP_TEXT, "range High");
       ObjectSetInteger(0, "range high text", OBJPROP_HIDDEN, false );
+      ObjectSetInteger(0, "range high text", OBJPROP_COLOR, InpColor );
      
       //--- low border range
       ObjectCreate(0,"rangeLow", OBJ_TREND, 0, startRange, rangeLow, now, rangeLow);
       ObjectSetInteger(0, "rangeLow", OBJPROP_HIDDEN, false );
+      ObjectSetInteger(0, "rangeLow", OBJPROP_COLOR, InpColor );
       ObjectCreate(0, "rangeLow next", OBJ_TREND, 0, now, rangeLow, stopTime, rangeLow);
       ObjectSetInteger(0, "rangeLow next", OBJPROP_HIDDEN, false );
       ObjectSetInteger( 0, "rangeLow next", OBJPROP_STYLE, STYLE_DOT );
+      ObjectSetInteger(0, "rangeLow next", OBJPROP_COLOR, InpColor );
       //text
       ObjectCreate(0, "range low text", OBJ_TEXT, 0, startRange, rangeLow);
       ObjectSetString(0, "range low text", OBJPROP_TEXT, "range Low");
-      ObjectSetInteger(0, "range low text", OBJPROP_HIDDEN, false );      
+      ObjectSetInteger(0, "range low text", OBJPROP_HIDDEN, false );
+      ObjectSetInteger(0, "range low text", OBJPROP_COLOR, InpColor );      
 }    
 //+------------------------------------------------------------------+
 //- New Day  --------------------------------------------------------+

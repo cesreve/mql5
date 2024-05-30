@@ -24,11 +24,14 @@ enum time_unit
    M5 = PERIOD_M5
 };
   
-enum symbol
-{
-   USDJPY,
-   EURUSD
-};
+enum ENUM_SYMBOL
+ { 
+  EURUSD= 0 , 
+  GPBUSD= 1 , 
+  USDCHF= 2
+ };
+
+
 
 //+------------------------------------------------------------------+
 //| Inputs                                                           |
@@ -50,7 +53,7 @@ input time_unit InpTframe = M1;
 
 //--- strategy parameters
 input group "==== SYMBOL ====";
-input symbol InpSymbol;
+input ENUM_SYMBOL Symbol;
 //---
 input int InpBreakEvenTreshold = 0;
 //+------------------------------------------------------------------+
