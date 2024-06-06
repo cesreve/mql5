@@ -40,6 +40,9 @@ input int InpMagicNumber      = 0;
 input double InpLots          = 0.01;
 input string InpTradeComment  = "Range Breakout";
 input color InpColor          = clrRed;
+
+input double InpMaxAmplitude = 0.85;
+input double InpMinAmplitude = 0.10;
 //+------------------------------------------------------------------+
 //| Global variables                                                 |
 //+------------------------------------------------------------------+
@@ -98,6 +101,28 @@ void OnTick()
       tradeShortAllowed = true;
       rangeAllowed=true;
       }
+
+//---
+   if ( !(now >= endRange) ) { return; } // time condition
+   highBetweenTwoHours(startRange, endRange); // calculates high and low of range
+   if (rangeAllowed) {drawObjetcs();} 
+   rangeAllowed = false;
+   
+   double ask = SymbolInfoDouble( Symbol(), SYMBOL_ASK);
+   double bid = SymbolInfoDouble( Symbol(), SYMBOL_BID);
+   double amplitude = NormalizeDouble((rangeHigh-rangeLow), 2);
+   double maxAmp = ask*InpMaxAmplitude/100;
+   double minAmp = ask*InpMinAmplitude/100;
+   if ( now < stopTime && amplitude > minAmp && amplitude < maxAmp) {
+   //if ( now < stopTime)  {
+      if( ask > rangeHigh && tradeLongAllowed ) { 
+         if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeLongAllowed = false; }
+      }
+      else if ( bid < rangeLow && tradeShortAllowed ) 
+         if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeShortAllowed = false; }
+   }
+   
+   if (now > closeTime) { closePositions(); }
 //---
    comm = "";
    comm += InpTradeComment;
@@ -115,25 +140,16 @@ void OnTick()
    comm += (string)tradeLongAllowed;
    comm += "\n";
    comm += (string)tradeShortAllowed;
-   Comment(comm);
-//---
-   if ( !(now >= endRange) ) { return; } // time condition
-   highBetweenTwoHours(startRange, endRange); // calculates high and low of range
-   if (rangeAllowed) {drawObjetcs();} 
-   rangeAllowed = false;
-   
-   double ask = SymbolInfoDouble( Symbol(), SYMBOL_ASK);
-   double bid = SymbolInfoDouble( Symbol(), SYMBOL_BID);
-   if ( now < stopTime ) {
-      if( ask > rangeHigh && tradeLongAllowed ) { 
-         if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeLongAllowed = false; }
-      }
-      else if ( bid < rangeLow && tradeShortAllowed ) 
-         if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeShortAllowed = false; }
-   }
-   
-   if (now > closeTime) { closePositions(); }
+   comm += "\n";   
+   comm += "Ask: "+(string)NormalizeDouble(ask, 2);
+   comm += "\n";   
+   comm += "Max amplitude "+(string)NormalizeDouble((ask*InpMaxAmplitude)/100, 2);
+   comm += "\n";   
+   comm += "Min amplitude "+(string)NormalizeDouble((ask*InpMinAmplitude)/100, 2);
+   comm += "\n";
+   comm += "Amplitude range: "+(string)NormalizeDouble((rangeHigh-rangeLow), 2); 
 
+   Comment(comm);
 
 } // end of the OnTick Function 
  
