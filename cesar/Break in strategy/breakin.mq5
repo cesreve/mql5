@@ -6,6 +6,7 @@
 #property copyright ""
 #property link      ""
 #property version   "1.00"
+//--- test
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
