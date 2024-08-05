@@ -8,6 +8,12 @@
 // if price breaks enter in position
 // close all position at the end of the day (end time)
 // can trigger in both side, but only 1 time a day per side
+// 1% risk with 1% stoploss
+// min range percent
+// max range percent 
+// max buys
+// max sells
+// max trades
 //+------------------------------------------------------------------+
 #property version   "1.00"
 //+------------------------------------------------------------------+
@@ -59,6 +65,7 @@ datetime closeTime  = 0;
 
 bool tradeLongAllowed = false;
 bool tradeShortAllowed = false;
+bool tradeAllowed = false;
 bool rangeAllowed = false;
 string comm = "";
 
@@ -99,6 +106,7 @@ void OnTick()
       rangeLow = 0;
       tradeLongAllowed = true;
       tradeShortAllowed = true;
+      tradeAllowed = true;
       rangeAllowed=true;
       }
 
@@ -115,11 +123,11 @@ void OnTick()
    double minAmp = ask*InpMinAmplitude/100;
    if ( now < stopTime && amplitude > minAmp && amplitude < maxAmp) {
    //if ( now < stopTime)  {
-      if( ask > rangeHigh && tradeLongAllowed ) { 
-         if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeLongAllowed = false; }
+      if( ask > rangeHigh && tradeAllowed ) { 
+         if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeAllowed = false; }
       }
-      else if ( bid < rangeLow && tradeShortAllowed ) 
-         if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeShortAllowed = false; }
+      else if ( bid < rangeLow && tradeAllowed ) 
+         if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeAllowed = false; }
    }
    
    if (now > closeTime) { closePositions(); }
