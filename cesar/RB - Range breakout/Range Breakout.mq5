@@ -44,6 +44,7 @@ input int InpCloseMinute      = 45; // Close all positions minute
 input group "==== Expert settings ====";
 input int InpMagicNumber      = 0;
 input double InpLots          = 0.01;
+input bool InpBothSides       = true;
 input string InpTradeComment  = "Range Breakout";
 input color InpColor          = clrRed;
 
@@ -118,16 +119,26 @@ void OnTick()
    
    double ask = SymbolInfoDouble( Symbol(), SYMBOL_ASK);
    double bid = SymbolInfoDouble( Symbol(), SYMBOL_BID);
-   double amplitude = NormalizeDouble((rangeHigh-rangeLow), 2);
+   double amplitude = NormalizeDouble((rangeHigh-rangeLow), 5);
    double maxAmp = ask*InpMaxAmplitude/100;
    double minAmp = ask*InpMinAmplitude/100;
    if ( now < stopTime && amplitude > minAmp && amplitude < maxAmp) {
-   //if ( now < stopTime)  {
-      if( ask > rangeHigh && tradeAllowed ) { 
-         if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeAllowed = false; }
+      if( InpBothSides ) {
+         if( ask > rangeHigh && tradeLongAllowed ) { 
+            if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeLongAllowed = false; }
+         }
+         else if ( bid < rangeLow && tradeShortAllowed ) {
+            if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeShortAllowed = false; }
+         }
       }
-      else if ( bid < rangeLow && tradeAllowed ) 
-         if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeAllowed = false; }
+      else {
+         if( ask > rangeHigh && tradeAllowed ) { 
+            if( setOrder(ORDER_TYPE_BUY, ask, 0) ) { tradeAllowed = false; }
+         }
+         else if ( bid < rangeLow && tradeAllowed ) {
+            if( setOrder(ORDER_TYPE_SELL, bid, 0) ) { tradeAllowed = false; }
+         }
+      }
    }
    
    if (now > closeTime) { closePositions(); }
@@ -151,11 +162,11 @@ void OnTick()
    comm += "\n";   
    comm += "Ask: "+(string)NormalizeDouble(ask, 2);
    comm += "\n";   
-   comm += "Max amplitude "+(string)NormalizeDouble((ask*InpMaxAmplitude)/100, 2);
+   comm += "Max amplitude "+(string)NormalizeDouble((ask*InpMaxAmplitude)/100, 5);
    comm += "\n";   
-   comm += "Min amplitude "+(string)NormalizeDouble((ask*InpMinAmplitude)/100, 2);
+   comm += "Min amplitude "+(string)NormalizeDouble((ask*InpMinAmplitude)/100, 5);
    comm += "\n";
-   comm += "Amplitude range: "+(string)NormalizeDouble((rangeHigh-rangeLow), 2); 
+   comm += "Amplitude range: "+(string)NormalizeDouble((rangeHigh-rangeLow), 5); 
 
    Comment(comm);
 
